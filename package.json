@@ -1,0 +1,20 @@
+{
+  "name": "Web-Scraper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "pdf-parser": "^1.0.5",
+    "puppeteer": "^19.7.4"
+  },
+  "devDependencies": {
+    "prettier": "^2.8.4"
+  }
+}
