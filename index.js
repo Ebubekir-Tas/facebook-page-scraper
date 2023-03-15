@@ -14,14 +14,22 @@ async function run() {
   const browser = await puppeteer.launch({ headless: false, args: ["--disable-notifications"] });
   // const browser = await puppeteer.launch();
   const page = await browser.newPage();
-  await page.setViewport({ width: 1500, height: 1000});
+  await page.setViewport({ width: 1500, height: 900});
 
   await page.goto('https://facebook.com/login');
   const pageScroller = async () => {
-    for (let i=0; i<15; i++) {
+    let previousHeight;
+    while (true) {
+      // Scroll down to the bottom of the page.
       await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
-      // await page.waitForFunction(`document.scrollHeight > ${previousHeight}`);
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      await page.waitForTimeout(1000); // Wait for some time to load new content.
+  
+      // Get the new height of the page and check if it has changed.
+      const currentHeight = await page.evaluate('document.body.scrollHeight');
+      if (currentHeight === previousHeight) {
+        break;
+      }
+      previousHeight = currentHeight;
     }
   }
   const login = async () => {
@@ -66,6 +74,8 @@ async function run() {
 
   await clickPagesTab();
 
+  let url = '';
+
   const searchLocation = async () => {
     // I have no idea why facebook nests their elements so deeply into divs, not sure if there's another way of doing this
     const locationSelector = 'div[role="list"] > div[role="listitem"]:nth-child(7) > div[role="list"] > div[role="listitem"]:nth-child(2) > div > div > div > div > div > div > div > div > div'
@@ -89,7 +99,7 @@ async function run() {
   const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
   const websiteRegex = /(?<=")[\w.+(?=")[^\s./]+\.com(?=\"|\s)|(^|\s)[^\s./]+\.com(?!\S|$)/gi
 
-  const queries = 2;
+  const queries = 1;
 
   const arr = [];
 
@@ -98,27 +108,28 @@ async function run() {
   await pageScroller()
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
+  url = page.url();
 
   const MAX_WAIT_TIME = 10000; // Maximum time to wait for the element in milliseconds
   const POLLING_INTERVAL = 200; // Time to wait between checks in milliseconds
   
   let startTime = Date.now();
-  let profileTilesFeedDiv = null;
+  let isOnPage = null;
   // await page.waitForTimeout(100);
-  while (Date.now() - startTime < MAX_WAIT_TIME && !profileTilesFeedDiv) {
-    profileTilesFeedDiv = await page.$('footer[role="contentinfo"]');
-    if (!profileTilesFeedDiv) {
+  while (Date.now() - startTime < MAX_WAIT_TIME && !isOnPage) {
+    isOnPage = await page.$('footer[role="contentinfo"]');
+    if (!isOnPage) {
       console.log('Element not found. Retrying in', POLLING_INTERVAL, 'milliseconds.');
       await page.waitForTimeout(POLLING_INTERVAL);
     }
   }
 
-  if (profileTilesFeedDiv) {
+  if (isOnPage) {
     console.log('element found')
   } else {
     console.log('Element not found within', MAX_WAIT_TIME, 'milliseconds.');
   }
-  profileTilesFeedDiv = null;
+  isOnPage = null;
 
   // await page.waitForSelector(page.$('div[data-pagelet="ProfileTilesFeed_0"]'));
   // await page.waitForSelector( profileTilesFeedDiv, { timeout: 30000 });
@@ -152,11 +163,12 @@ async function run() {
           if (email) obj.email = email;
           if (website) obj.website = website;
           if (pageTitle) obj.pageTitle = pageTitle;
+          obj.url = url;
 
           if (Object.keys(obj).length) {
             arr.push(obj);
           }
-          // logArr()
+          console.log(arr);
       }
     });
   }
@@ -169,6 +181,7 @@ async function run() {
 
       let isLinkHighlighted = false;
       let isVerified = false;
+ 
       await page.keyboard.press('Tab');
       await page.waitForTimeout(100);
       while (!isLinkHighlighted) {
@@ -183,10 +196,44 @@ async function run() {
           await page.waitForTimeout(100);
           await page.keyboard.press('Tab');
           await page.waitForTimeout(100);
-          // await page.keyboard.press('Tab');
-          // await page.waitForTimeout(100);
-          // todo: might only need one tab, but this isn't working for some reason.i should just copy implementation of below
         }
+
+        let falseElFocused = false;
+
+        //todo activeEl not defined
+        // falseElFocused = await page.evaluate(() => {
+        //   const focusedElement = document.activeElement;
+
+        //   const isPfp = focusedElement.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following' && activeEl.getAttribute('href').contains('https://www.facebook.com/')
+        //   const isVerified = focusedElement.getAttribute('aria-label') === 'Verified';
+        //   const isBtn = focusedElement.getAttribute('aria-label').contains('ollow') || focusedElement.getAttribute('aria-label').contains('ike');
+        //   console.log('end')
+        //   console.log('isPfp: ' + isPfp)
+        //   console.log('isVerified: ' + isVerified)
+        //   console.log('isBtn: ' + isBtn)
+        //   console.log('end')
+        //   if (!isPfp && !isVerified && !isBtn) {
+        //     return true
+        //   } 
+        //   return false
+        // });
+
+        // if (falseElFocused) {
+        //   await page.waitForTimeout(2000);
+        //   await page.keyboard.down('Shift');
+        //   await page.keyboard.press('Tab');
+        //   await page.keyboard.up('Shift');
+        //   await page.waitForTimeout(300);
+        // }
+
+        // const tab = async () => {
+        //   await page.keyboard.press('Tab');
+        // }
+        // for (let i=0; i< 200; i++) {
+        //   await tab()
+        // }
+
+
         isLinkHighlighted = await page.evaluate(() => {
           const activeEl = document.activeElement;
           // second condition makes sure it doesn't select the "following" button if it highlights a page the user is following
@@ -198,12 +245,25 @@ async function run() {
 
       await page.waitForTimeout(100);
 
+      // if link highlighted is activeEl.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following';
+      // then press enter. If not, ctrl tab aka go back because somehing's wrong.
+  
+      // or if it tabs too far and its highlighting something top left or something go back
+      let isPage = false;
+      //todo
+      // isPage = await page.evaluate(() => {
+      //   const activeEl = document.activeElement;
+      //   // second condition makes sure it doesn't select the "following" button if it highlights a page the user is following
+      //   return activeEl.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following';
+      // });
+      // if (isPage) {
+      // }
       await page.keyboard.press('Enter');
 
       // const pageLink = await page.$('a[role="link"]');
-
       await page.waitForTimeout(1500);
-  
+        url = page.url();
+
       await page.pdf({ path: PDF_PATH });
 
       await scrapePage()
@@ -212,7 +272,6 @@ async function run() {
     for (let i=0; i<queries; i++){
       await changePage()
     }
-
 
     function logArr() {
       console.log(arr);
