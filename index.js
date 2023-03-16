@@ -106,13 +106,14 @@ async function run() {
   const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
   const websiteRegex = /(?<=")[\w.+(?=")[^\s./]+\.com(?=\"|\s)|(^|\s)[^\s./]+\.com(?!\S|$)/gi
 
-  const queries = 99;
+  const queries = 1;
 
   const arr = [];
+  const urlsArr = [];
 
   await page.waitForTimeout(1500);
 
-  await pageScroller()
+  // await pageScroller()
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
   url = page.url();
@@ -203,7 +204,17 @@ async function run() {
       const tab = async () => {
         await page.keyboard.press('Tab');
         let falseElFocused = false;
+        let href = '';
 
+        href = await page.evaluate(() => {
+          const focusedElement = document.activeElement;
+          const pfpEl = focusedElement.getAttribute('href')?.includes('https://www.facebook.com/') && focusedElement.getAttribute('role') === 'link' && focusedElement.getAttribute('aria-label') !== 'Following';
+          if (pfpEl) {
+            return focusedElement.getAttribute('href')
+          }
+        })
+
+        if (href) urlsArr.push(href);
         // const tooFar = await page.$('div[role="button"][aria-label="New message"]');
         try {
         falseElFocused = await page.evaluate(() => {
@@ -242,10 +253,12 @@ async function run() {
         await page.waitForTimeout(100);
 
       }
-      await tab();
+      await tab(urlsArr);
+
       while (!isLinkHighlighted) {
         await tab()
         await page.waitForTimeout(100);
+
         isVerified = await page.evaluate(() => {
           const focusedElement = document.activeElement;
           return focusedElement.getAttribute('aria-label') === 'Verified';
@@ -290,9 +303,9 @@ async function run() {
         // const tab = async () => {
         //   await page.keyboard.press('Tab');
         // }
-        // for (let i=0; i< 200; i++) {
-        //   await tab()
-        // }
+        for (let i=0; i< 20; i++) {
+          await tab()
+        }
 
 
         isLinkHighlighted = await page.evaluate(() => {
@@ -328,12 +341,13 @@ async function run() {
 
       await page.pdf({ path: PDF_PATH });
 
-      await scrapePage()
+      // await scrapePage()
       await page.waitForTimeout(100);
 
       console.log(arr);
 
     }
+
 
     for (let i=0; i<queries; i++){
       await changePage()
@@ -344,6 +358,7 @@ async function run() {
   const elapsed = end - start;
   console.log(`Function took ${elapsed} milliseconds to complete.`);
   console.log(arr)
+  console.log(urlsArr)
 }
 
 run();
