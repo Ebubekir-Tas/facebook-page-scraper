@@ -1,3 +1,10 @@
+// crashed around 4:25
+
+// idea: I don't have to navigate to the page I just need the url.
+// when I hover over the page pfp I can get the url of that page and convert it to pdf
+// I can tab until I gathered 100 urls in an array, or however many queries
+// and have an arr of 100 urls and iterate thru that and make pdfs from each url and scrape them
+
 const puppeteer = require('puppeteer');
 var pdfParser = require('pdf-parser');
 require('dotenv').config();
@@ -99,7 +106,7 @@ async function run() {
   const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
   const websiteRegex = /(?<=")[\w.+(?=")[^\s./]+\.com(?=\"|\s)|(^|\s)[^\s./]+\.com(?!\S|$)/gi
 
-  const queries = 1;
+  const queries = 99;
 
   const arr = [];
 
@@ -167,13 +174,14 @@ async function run() {
 
           if (Object.keys(obj).length) {
             arr.push(obj);
+          } else {
+            console.log('no data found')
           }
-          console.log(arr);
       }
     });
   }
 
-    scrapePage()
+    await scrapePage()
 
     async function changePage() {
       await page.goBack();
@@ -182,10 +190,61 @@ async function run() {
       let isLinkHighlighted = false;
       let isVerified = false;
  
-      await page.keyboard.press('Tab');
-      await page.waitForTimeout(100);
-      while (!isLinkHighlighted) {
+
+      const tabBack = async () => {
+        await page.waitForTimeout(2000);
+        await page.keyboard.down('Shift');
         await page.keyboard.press('Tab');
+        await page.keyboard.press('Tab');
+        await page.keyboard.up('Shift');
+        await page.waitForTimeout(300);
+      }
+
+      const tab = async () => {
+        await page.keyboard.press('Tab');
+        let falseElFocused = false;
+
+        // const tooFar = await page.$('div[role="button"][aria-label="New message"]');
+        try {
+        falseElFocused = await page.evaluate(() => {
+          const focusedElement = document.activeElement;
+
+          
+        const isPfp = focusedElement.getAttribute('role') === 'link' && focusedElement.getAttribute('aria-label') !== 'Following' && focusedElement.getAttribute('href')?.includes('https://www.facebook.com/') || focusedElement.getAttribute('href')?.includes('/stories/');
+        const verified = focusedElement.getAttribute('aria-label') === 'Verified';
+        const isBtn = focusedElement.getAttribute('aria-label')?.includes('ollow') || focusedElement.getAttribute('aria-label')?.includes('ike');
+        const newMsg =  document.querySelector('div[role="button"][aria-label="New Message"]');
+        const isMsg = focusedElement === newMsg;
+
+          // const isPfp = focusedElement.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following' && activeEl.getAttribute('href').includes('https://www.facebook.com/')
+          // const isVerified = focusedElement.getAttribute('aria-label') === 'Verified';
+          // const isBtn = focusedElement.getAttribute('aria-label').includes('ollow') || focusedElement.getAttribute('aria-label').includes('ike');
+          // console.log('end')
+          // console.log('isPfp: ' + isPfp)
+          // console.log('isVerified: ' + isVerified)
+          // console.log('isBtn: ' + isBtn)
+          // console.log('end')
+          if (isMsg || !isPfp && !verified && !isBtn) {
+            console.log('here')
+            console.log(isPfp + verified + isBtn)
+            return true;
+          } else {
+            return false;
+          }
+        });
+      } catch (err) {
+        console.log(err)
+      }
+        if (falseElFocused) {
+          console.log('too far')
+          await tabBack();
+        }
+        await page.waitForTimeout(100);
+
+      }
+      await tab();
+      while (!isLinkHighlighted) {
+        await tab()
         await page.waitForTimeout(100);
         isVerified = await page.evaluate(() => {
           const focusedElement = document.activeElement;
@@ -194,19 +253,21 @@ async function run() {
 
         if (isVerified) {
           await page.waitForTimeout(100);
-          await page.keyboard.press('Tab');
+          await tab();
           await page.waitForTimeout(100);
         }
 
-        let falseElFocused = false;
+
+
+
 
         //todo activeEl not defined
         // falseElFocused = await page.evaluate(() => {
         //   const focusedElement = document.activeElement;
 
-        //   const isPfp = focusedElement.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following' && activeEl.getAttribute('href').contains('https://www.facebook.com/')
-        //   const isVerified = focusedElement.getAttribute('aria-label') === 'Verified';
-        //   const isBtn = focusedElement.getAttribute('aria-label').contains('ollow') || focusedElement.getAttribute('aria-label').contains('ike');
+          // const isPfp = focusedElement.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following' && activeEl.getAttribute('href').includes('https://www.facebook.com/')
+          // const isVerified = focusedElement.getAttribute('aria-label') === 'Verified';
+          // const isBtn = focusedElement.getAttribute('aria-label').includes('ollow') || focusedElement.getAttribute('aria-label').includes('ike');
         //   console.log('end')
         //   console.log('isPfp: ' + isPfp)
         //   console.log('isVerified: ' + isVerified)
@@ -240,6 +301,7 @@ async function run() {
           return activeEl.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following';
         });
         await page.waitForTimeout(100);
+
       }
 
 
@@ -249,7 +311,7 @@ async function run() {
       // then press enter. If not, ctrl tab aka go back because somehing's wrong.
   
       // or if it tabs too far and its highlighting something top left or something go back
-      let isPage = false;
+      // let isPage = false;
       //todo
       // isPage = await page.evaluate(() => {
       //   const activeEl = document.activeElement;
@@ -267,19 +329,21 @@ async function run() {
       await page.pdf({ path: PDF_PATH });
 
       await scrapePage()
+      await page.waitForTimeout(100);
+
+      console.log(arr);
+
     }
 
     for (let i=0; i<queries; i++){
       await changePage()
     }
 
-    function logArr() {
-      console.log(arr);
-    }
-  logArr()
+
   const end = Date.now();
   const elapsed = end - start;
   console.log(`Function took ${elapsed} milliseconds to complete.`);
+  console.log(arr)
 }
 
 run();
@@ -383,7 +447,7 @@ run();
 // await page.keyboard.press('Enter');
 
 /*
-const phoneNumberElement = await page.$x(`//*[contains(text(), '(301) 922-1677')]`);
+const phoneNumberElement = await page.$x(`//*[includes(text(), '(301) 922-1677')]`);
 // const html = await phoneNumberElement.evaluate(el => el.html);
 // console.log(html);
 await page.pdf({ path: 'example.pdf' });
