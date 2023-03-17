@@ -5,8 +5,13 @@
 // I can tab until I gathered 100 urls in an array, or however many queries
 // and have an arr of 100 urls and iterate thru that and make pdfs from each url and scrape them
 
+// todo: put the "element not found" loop thing on each navigation, sometimes the program fails for some reason maybe bc it navigates but isn't done rendering elements
+// todo: fix bugs of initial search sometimes not working, etc
+
 const puppeteer = require('puppeteer');
 var pdfParser = require('pdf-parser');
+const fs = require('fs');
+const { URL } = require('url');
 require('dotenv').config();
 
 const EMAIL = process.env.EMAIL;
@@ -81,8 +86,6 @@ async function run() {
 
   await clickPagesTab();
 
-  let url = '';
-
   const searchLocation = async () => {
     // I have no idea why facebook nests their elements so deeply into divs, not sure if there's another way of doing this
     const locationSelector = 'div[role="list"] > div[role="listitem"]:nth-child(7) > div[role="list"] > div[role="listitem"]:nth-child(2) > div > div > div > div > div > div > div > div > div'
@@ -106,7 +109,7 @@ async function run() {
   const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
   const websiteRegex = /(?<=")[\w.+(?=")[^\s./]+\.com(?=\"|\s)|(^|\s)[^\s./]+\.com(?!\S|$)/gi
 
-  const queries = 1;
+  const queries = 5;
 
   const arr = [];
   const urlsArr = [];
@@ -114,30 +117,13 @@ async function run() {
   await page.waitForTimeout(1500);
 
   // await pageScroller()
-  await page.keyboard.press('Tab');
-  await page.keyboard.press('Enter');
-  url = page.url();
+  // await page.keyboard.press('Tab');
+  // await page.keyboard.press('Enter');
 
-  const MAX_WAIT_TIME = 10000; // Maximum time to wait for the element in milliseconds
-  const POLLING_INTERVAL = 200; // Time to wait between checks in milliseconds
-  
-  let startTime = Date.now();
-  let isOnPage = null;
-  // await page.waitForTimeout(100);
-  while (Date.now() - startTime < MAX_WAIT_TIME && !isOnPage) {
-    isOnPage = await page.$('footer[role="contentinfo"]');
-    if (!isOnPage) {
-      console.log('Element not found. Retrying in', POLLING_INTERVAL, 'milliseconds.');
-      await page.waitForTimeout(POLLING_INTERVAL);
-    }
-  }
+  // todo uncomment and uncomment in changePage func
+  // url = page.url();
 
-  if (isOnPage) {
-    console.log('element found')
-  } else {
-    console.log('Element not found within', MAX_WAIT_TIME, 'milliseconds.');
-  }
-  isOnPage = null;
+
 
   // await page.waitForSelector(page.$('div[data-pagelet="ProfileTilesFeed_0"]'));
   // await page.waitForSelector( profileTilesFeedDiv, { timeout: 30000 });
@@ -149,8 +135,30 @@ async function run() {
 
   await page.pdf({ path: PDF_PATH });
 
-  const scrapePage = async () => {
+  const scrapePage = async (url) => {
+    await page.waitForTimeout(100);
+    await page.pdf({ path: PDF_PATH });
     const pageTitle = await page.$eval('title', el => el.textContent);
+    const MAX_WAIT_TIME = 10000; // Maximum time to wait for the element in milliseconds
+    const POLLING_INTERVAL = 200; // Time to wait between checks in milliseconds
+    
+    let startTime = Date.now();
+    let isOnPage = null;
+    while (Date.now() - startTime < MAX_WAIT_TIME && !isOnPage) {
+      isOnPage = await page.$('footer[role="contentinfo"]');
+      if (!isOnPage) {
+        console.log('Element not found. Retrying in', POLLING_INTERVAL, 'milliseconds.');
+        await page.waitForTimeout(POLLING_INTERVAL);
+      }
+    }
+  
+    if (isOnPage) {
+      console.log('element found')
+    } else {
+      console.log('Element not found within', MAX_WAIT_TIME, 'milliseconds.');
+    }
+    isOnPage = null;
+    
     pdfParser.pdf2json(PDF_PATH, async function (error, pdf) {
       if(error != null){
           console.log(error);
@@ -167,11 +175,13 @@ async function run() {
           const website = websiteMatch ? websiteMatch[0] : 'N/A';
 
           const obj = {};
+          // todo: website phoneNumber email aren't working
           if (phoneNumber) obj.phoneNumber = phoneNumber;
           if (email) obj.email = email;
           if (website) obj.website = website;
           if (pageTitle) obj.pageTitle = pageTitle;
-          obj.url = url;
+          const parsedUrl = new URL(url).toString().replace(/\?.*/, '');
+          obj.url = parsedUrl;
 
           if (Object.keys(obj).length) {
             arr.push(obj);
@@ -182,183 +192,214 @@ async function run() {
     });
   }
 
-    await scrapePage()
+    // await scrapePage()
 
-    async function changePage() {
-      await page.goBack();
+    const tabBack = async () => {
+      await page.waitForTimeout(2000);
+      await page.keyboard.down('Shift');
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Tab');
+      await page.keyboard.up('Shift');
+      await page.waitForTimeout(300);
+    }
+
+    const tab = async () => {
+      await page.keyboard.press('Tab');
+      let falseElFocused = false;
+      let href = '';
+
+      href = await page.evaluate(() => {
+        const focusedElement = document.activeElement;
+        const pfpEl = focusedElement.getAttribute('href')?.includes('https://www.facebook.com/') && focusedElement.getAttribute('role') === 'link' && !(focusedElement.getAttribute('aria-label').includes('ollow')) && !(focusedElement.getAttribute('aria-label').includes('ike'));
+        if (pfpEl) {
+          return focusedElement.getAttribute('href')
+        }
+      })
+
+      if (href) urlsArr.push(href);
+      // const tooFar = await page.$('div[role="button"][aria-label="New message"]');
+      try {
+      falseElFocused = await page.evaluate(() => {
+        const focusedElement = document.activeElement;
+
+        
+      const isPfp = focusedElement.getAttribute('role') === 'link' && focusedElement.getAttribute('aria-label') !== 'Following' && focusedElement.getAttribute('href')?.includes('https://www.facebook.com/') || focusedElement.getAttribute('href')?.includes('/stories/');
+      const verified = focusedElement.getAttribute('aria-label') === 'Verified';
+      const isBtn = focusedElement.getAttribute('aria-label')?.includes('ollow') || focusedElement.getAttribute('aria-label')?.includes('ike');
+      const newMsg =  document.querySelector('div[role="button"][aria-label="New Message"]');
+      const isMsg = focusedElement === newMsg;
+
+        // const isPfp = focusedElement.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following' && activeEl.getAttribute('href').includes('https://www.facebook.com/')
+        // const isVerified = focusedElement.getAttribute('aria-label') === 'Verified';
+        // const isBtn = focusedElement.getAttribute('aria-label').includes('ollow') || focusedElement.getAttribute('aria-label').includes('ike');
+        // console.log('end')
+        // console.log('isPfp: ' + isPfp)
+        // console.log('isVerified: ' + isVerified)
+        // console.log('isBtn: ' + isBtn)
+        // console.log('end')
+        if (isMsg || !isPfp && !verified && !isBtn) {
+          console.log('here')
+          console.log(isPfp + verified + isBtn)
+          return true;
+        } else {
+          return false;
+        }
+      });
+    } catch (err) {
+      console.log(err)
+    }
+      if (falseElFocused) {
+        console.log('too far')
+        await tabBack();
+      }
       await page.waitForTimeout(100);
 
-      let isLinkHighlighted = false;
-      let isVerified = false;
+    }
+
+    // async function changePage() {
+    //   await page.goBack();
+    //   await page.waitForTimeout(100);
+
+    //   let isLinkHighlighted = false;
+    //   let isVerified = false;
  
+    //   await tab();
 
-      const tabBack = async () => {
-        await page.waitForTimeout(2000);
-        await page.keyboard.down('Shift');
-        await page.keyboard.press('Tab');
-        await page.keyboard.press('Tab');
-        await page.keyboard.up('Shift');
-        await page.waitForTimeout(300);
-      }
+    //   while (!isLinkHighlighted) {
+    //     await tab()
+    //     await page.waitForTimeout(100);
 
-      const tab = async () => {
-        await page.keyboard.press('Tab');
-        let falseElFocused = false;
-        let href = '';
+    //     isVerified = await page.evaluate(() => {
+    //       const focusedElement = document.activeElement;
+    //       return focusedElement.getAttribute('aria-label') === 'Verified';
+    //     });
 
-        href = await page.evaluate(() => {
-          const focusedElement = document.activeElement;
-          const pfpEl = focusedElement.getAttribute('href')?.includes('https://www.facebook.com/') && focusedElement.getAttribute('role') === 'link' && focusedElement.getAttribute('aria-label') !== 'Following';
-          if (pfpEl) {
-            return focusedElement.getAttribute('href')
-          }
-        })
-
-        if (href) urlsArr.push(href);
-        // const tooFar = await page.$('div[role="button"][aria-label="New message"]');
-        try {
-        falseElFocused = await page.evaluate(() => {
-          const focusedElement = document.activeElement;
-
-          
-        const isPfp = focusedElement.getAttribute('role') === 'link' && focusedElement.getAttribute('aria-label') !== 'Following' && focusedElement.getAttribute('href')?.includes('https://www.facebook.com/') || focusedElement.getAttribute('href')?.includes('/stories/');
-        const verified = focusedElement.getAttribute('aria-label') === 'Verified';
-        const isBtn = focusedElement.getAttribute('aria-label')?.includes('ollow') || focusedElement.getAttribute('aria-label')?.includes('ike');
-        const newMsg =  document.querySelector('div[role="button"][aria-label="New Message"]');
-        const isMsg = focusedElement === newMsg;
-
-          // const isPfp = focusedElement.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following' && activeEl.getAttribute('href').includes('https://www.facebook.com/')
-          // const isVerified = focusedElement.getAttribute('aria-label') === 'Verified';
-          // const isBtn = focusedElement.getAttribute('aria-label').includes('ollow') || focusedElement.getAttribute('aria-label').includes('ike');
-          // console.log('end')
-          // console.log('isPfp: ' + isPfp)
-          // console.log('isVerified: ' + isVerified)
-          // console.log('isBtn: ' + isBtn)
-          // console.log('end')
-          if (isMsg || !isPfp && !verified && !isBtn) {
-            console.log('here')
-            console.log(isPfp + verified + isBtn)
-            return true;
-          } else {
-            return false;
-          }
-        });
-      } catch (err) {
-        console.log(err)
-      }
-        if (falseElFocused) {
-          console.log('too far')
-          await tabBack();
-        }
-        await page.waitForTimeout(100);
-
-      }
-      await tab(urlsArr);
-
-      while (!isLinkHighlighted) {
-        await tab()
-        await page.waitForTimeout(100);
-
-        isVerified = await page.evaluate(() => {
-          const focusedElement = document.activeElement;
-          return focusedElement.getAttribute('aria-label') === 'Verified';
-        });
-
-        if (isVerified) {
-          await page.waitForTimeout(100);
-          await tab();
-          await page.waitForTimeout(100);
-        }
+    //     if (isVerified) {
+    //       await page.waitForTimeout(100);
+    //       await tab();
+    //       await page.waitForTimeout(100);
+    //     }
 
 
 
 
 
-        //todo activeEl not defined
-        // falseElFocused = await page.evaluate(() => {
-        //   const focusedElement = document.activeElement;
+    //     //todo activeEl not defined
+    //     // falseElFocused = await page.evaluate(() => {
+    //     //   const focusedElement = document.activeElement;
 
-          // const isPfp = focusedElement.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following' && activeEl.getAttribute('href').includes('https://www.facebook.com/')
-          // const isVerified = focusedElement.getAttribute('aria-label') === 'Verified';
-          // const isBtn = focusedElement.getAttribute('aria-label').includes('ollow') || focusedElement.getAttribute('aria-label').includes('ike');
-        //   console.log('end')
-        //   console.log('isPfp: ' + isPfp)
-        //   console.log('isVerified: ' + isVerified)
-        //   console.log('isBtn: ' + isBtn)
-        //   console.log('end')
-        //   if (!isPfp && !isVerified && !isBtn) {
-        //     return true
-        //   } 
-        //   return false
-        // });
+    //       // const isPfp = focusedElement.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following' && activeEl.getAttribute('href').includes('https://www.facebook.com/')
+    //       // const isVerified = focusedElement.getAttribute('aria-label') === 'Verified';
+    //       // const isBtn = focusedElement.getAttribute('aria-label').includes('ollow') || focusedElement.getAttribute('aria-label').includes('ike');
+    //     //   console.log('end')
+    //     //   console.log('isPfp: ' + isPfp)
+    //     //   console.log('isVerified: ' + isVerified)
+    //     //   console.log('isBtn: ' + isBtn)
+    //     //   console.log('end')
+    //     //   if (!isPfp && !isVerified && !isBtn) {
+    //     //     return true
+    //     //   } 
+    //     //   return false
+    //     // });
 
-        // if (falseElFocused) {
-        //   await page.waitForTimeout(2000);
-        //   await page.keyboard.down('Shift');
-        //   await page.keyboard.press('Tab');
-        //   await page.keyboard.up('Shift');
-        //   await page.waitForTimeout(300);
+    //     // if (falseElFocused) {
+    //     //   await page.waitForTimeout(2000);
+    //     //   await page.keyboard.down('Shift');
+    //     //   await page.keyboard.press('Tab');
+    //     //   await page.keyboard.up('Shift');
+    //     //   await page.waitForTimeout(300);
+    //     // }
+
+    //     // const tab = async () => {
+    //     //   await page.keyboard.press('Tab');
+    //     // }
+
+    //     // is it this?
+        // while (urlsArr.length < queries) {
+        //   await tab()
         // }
 
-        // const tab = async () => {
-        //   await page.keyboard.press('Tab');
-        // }
-        for (let i=0; i< 20; i++) {
-          await tab()
-        }
+
+    //     isLinkHighlighted = await page.evaluate(() => {
+    //       const activeEl = document.activeElement;
+    //       // second condition makes sure it doesn't select the "following" button if it highlights a page the user is following
+    //       return activeEl.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following';
+    //     });
+    //     await page.waitForTimeout(100);
+
+    //   }
 
 
-        isLinkHighlighted = await page.evaluate(() => {
-          const activeEl = document.activeElement;
-          // second condition makes sure it doesn't select the "following" button if it highlights a page the user is following
-          return activeEl.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following';
-        });
-        await page.waitForTimeout(100);
+    //   await page.waitForTimeout(100);
 
-      }
-
-
-      await page.waitForTimeout(100);
-
-      // if link highlighted is activeEl.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following';
-      // then press enter. If not, ctrl tab aka go back because somehing's wrong.
+    //   // if link highlighted is activeEl.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following';
+    //   // then press enter. If not, ctrl tab aka go back because somehing's wrong.
   
-      // or if it tabs too far and its highlighting something top left or something go back
-      // let isPage = false;
-      //todo
-      // isPage = await page.evaluate(() => {
-      //   const activeEl = document.activeElement;
-      //   // second condition makes sure it doesn't select the "following" button if it highlights a page the user is following
-      //   return activeEl.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following';
-      // });
-      // if (isPage) {
-      // }
-      await page.keyboard.press('Enter');
+    //   // or if it tabs too far and its highlighting something top left or something go back
+    //   // let isPage = false;
+    //   //todo
+    //   // isPage = await page.evaluate(() => {
+    //   //   const activeEl = document.activeElement;
+    //   //   // second condition makes sure it doesn't select the "following" button if it highlights a page the user is following
+    //   //   return activeEl.getAttribute('role') === 'link' && activeEl.getAttribute('aria-label') !== 'Following';
+    //   // });
+    //   // if (isPage) {
+    //   // }
+    //   await page.keyboard.press('Enter');
 
-      // const pageLink = await page.$('a[role="link"]');
-      await page.waitForTimeout(1500);
-        url = page.url();
+    //   // const pageLink = await page.$('a[role="link"]');
+    //   await page.waitForTimeout(1500);
 
-      await page.pdf({ path: PDF_PATH });
+    //     // todo uncomment if needed
+    //     // url = page.url();
 
-      // await scrapePage()
-      await page.waitForTimeout(100);
+    //   await page.pdf({ path: PDF_PATH });
 
-      console.log(arr);
+    //   // await scrapePage()
+    //   await page.waitForTimeout(100);
 
+    //   console.log(arr);
+
+    // }
+
+
+    // for (let i=0; i<queries; i++){
+    //   await changePage()
+    // }
+
+    // or this
+    while (urlsArr.length < queries) {
+      await tab()
     }
+    
+  const scrapeArrURL = async (url) => {
+    await page.goto(url);
+    // await page.waitForTimeout(100);
+    // await page.pdf({ path: PDF_PATH });
+    await page.waitForTimeout(100);
+    await scrapePage(url)
+  }
 
-
-    for (let i=0; i<queries; i++){
-      await changePage()
-    }
+  for (let i=0; i<queries; i++) {
+    await scrapeArrURL(urlsArr[i])
+  }
 
 
   const end = Date.now();
   const elapsed = end - start;
-  console.log(`Function took ${elapsed} milliseconds to complete.`);
+  const timeTaken = `Function took ${elapsed} milliseconds to complete.`;
   console.log(arr)
   console.log(urlsArr)
+
+  const data = arr.map(obj => JSON.stringify(obj)).join('\n') + '\n' + timeTaken;
+
+  fs.writeFile('results.txt', data, function(err) {
+      if (err) {
+          console.log('Error saving file:', err);
+      } else {
+          console.log('Results saved to file.');
+      }
+  });
 }
 
 run();
