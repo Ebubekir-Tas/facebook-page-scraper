@@ -109,7 +109,7 @@ async function run() {
   const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
   const websiteRegex = /(?<=")[\w.+(?=")[^\s./]+\.com(?=\"|\s)|(^|\s)[^\s./]+\.com(?!\S|$)/gi
 
-  const queries = 5;
+  const queries = 99;
 
   const arr = [];
   const urlsArr = [];
@@ -387,7 +387,7 @@ async function run() {
 
   const end = Date.now();
   const elapsed = end - start;
-  const timeTaken = `Function took ${elapsed} milliseconds to complete.`;
+  const timeTaken = `Function took ${elapsed} milliseconds to complete ${queries} pages.`;
   console.log(arr)
   console.log(urlsArr)
 
