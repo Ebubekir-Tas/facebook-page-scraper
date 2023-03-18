@@ -15,7 +15,7 @@ async function run() {
   const browser = await puppeteer.launch({ headless: false, args: ["--disable-notifications"] });
   // const browser = await puppeteer.launch();
   const page = await browser.newPage();
-  await page.setViewport({ width: 1500, height: 900});
+  await page.setViewport({ width: 1500, height: 900 });
 
   const queries = 1;
 
@@ -30,7 +30,7 @@ async function run() {
       await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
 
       // Wait for the loading indicator to appear.
-      loadingIndicator = await page.waitForSelector('[role="progressbar"][aria-label="Loading..."][data-visualcompletion="loading-state"]', { timeout: 1000, visible: true }).catch(() => {});
+      loadingIndicator = await page.waitForSelector('[role="progressbar"][aria-label="Loading..."][data-visualcompletion="loading-state"]', { timeout: 1000, visible: true }).catch(() => { });
       if (loadingIndicator) {
         // If the loading indicator is visible, continue scrolling down the page.
         continue;
@@ -81,106 +81,106 @@ async function run() {
 
   await clickPagesTab();
 
-const searchLocation = async () => {
-  // I have no idea why facebook nests their elements so deeply into divs, not sure if there's another way of doing this
-  const locationSelector =
-    'div[role="list"] > div[role="listitem"]:nth-child(7) > div[role="list"] > div[role="listitem"]:nth-child(2) > div > div > div > div > div > div > div > div > div';
+  const searchLocation = async () => {
+    // I have no idea why facebook nests their elements so deeply into divs, not sure if there's another way of doing this
+    const locationSelector =
+      'div[role="list"] > div[role="listitem"]:nth-child(7) > div[role="list"] > div[role="listitem"]:nth-child(2) > div > div > div > div > div > div > div > div > div';
 
-  await page.waitForSelector(locationSelector);
-  await page.click(locationSelector);
+    await page.waitForSelector(locationSelector);
+    await page.click(locationSelector);
 
-  await page.waitForSelector(locationSelector);
+    await page.waitForSelector(locationSelector);
 
-  const locationInput =
-    'div[role="list"] > div[role="listitem"]:nth-child(7) > div > div:nth-child(2) > div > div > div > div > div > div > div:nth-child(2) > input';
-  await page.waitForSelector(locationInput);
-  await page.type(locationInput, LOCATION_SEARCH);
-  await page.waitForTimeout(500);
+    const locationInput =
+      'div[role="list"] > div[role="listitem"]:nth-child(7) > div > div:nth-child(2) > div > div > div > div > div > div > div:nth-child(2) > input';
+    await page.waitForSelector(locationInput);
+    await page.type(locationInput, LOCATION_SEARCH);
+    await page.waitForTimeout(500);
 
-  await page.waitForFunction(() => {
-    const element = document.querySelector('div[style*="position: fixed;"][style*="width: 294px;"][style*="transform: translate("]');
-    const li = element ? element.querySelector('li[aria-selected="false"]') : null;
-    if (li) {
-      return li;
-    }
-  });
-  await page.waitForTimeout(500);
+    await page.waitForFunction(() => {
+      const element = document.querySelector('div[style*="position: fixed;"][style*="width: 294px;"][style*="transform: translate("]');
+      const li = element ? element.querySelector('li[aria-selected="false"]') : null;
+      if (li) {
+        return li;
+      }
+    });
+    await page.waitForTimeout(500);
 
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('Enter');
-};
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+  };
 
-await searchLocation();
+  await searchLocation();
 
-const phoneRegex = /\(\d{3}\) \d{3}-\d{4}/;
-const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
-const websiteRegex = /(?<=")[\w.+(?=")[^\s./]+\.com(?=\"|\s)|(^|\s)[^\s./]+\.com(?!\S|$)/gi;
+  const phoneRegex = /\(\d{3}\) \d{3}-\d{4}/;
+  const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
+  const websiteRegex = /(?<=")[\w.+(?=")[^\s./]+\.com(?=\"|\s)|(^|\s)[^\s./]+\.com(?!\S|$)/gi;
 
-const arr = [];
-const urlsArr = [];
+  const arr = [];
+  const urlsArr = [];
 
-await page.waitForTimeout(1500);
+  await page.waitForTimeout(1500);
 
-if (queries > 10) await pageScroller();
+  if (queries > 10) await pageScroller();
 
-const PDF_PATH = 'page.pdf';
+  const PDF_PATH = 'page.pdf';
 
-await page.pdf({ path: PDF_PATH });
-
-const scrapePage = async (url) => {
-  await page.waitForTimeout(100);
   await page.pdf({ path: PDF_PATH });
-  const pageTitle = await page.$eval('title', (el) => el.textContent);
-  const MAX_WAIT_TIME = 10000; // Maximum time to wait for the element in milliseconds
-  const POLLING_INTERVAL = 200; // Time to wait between checks in milliseconds
 
-  let startTime = Date.now();
-  let isOnPage = null;
-  while (Date.now() - startTime < MAX_WAIT_TIME && !isOnPage) {
-    isOnPage = await page.$('footer[role="contentinfo"]');
-    if (!isOnPage) {
-      console.log('Element not found. Retrying in', POLLING_INTERVAL, 'milliseconds.');
-      await page.waitForTimeout(POLLING_INTERVAL);
-    }
-  }
+  const scrapePage = async (url) => {
+    await page.waitForTimeout(100);
+    await page.pdf({ path: PDF_PATH });
+    const pageTitle = await page.$eval('title', (el) => el.textContent);
+    const MAX_WAIT_TIME = 10000; // Maximum time to wait for the element in milliseconds
+    const POLLING_INTERVAL = 200; // Time to wait between checks in milliseconds
 
-  if (isOnPage) {
-    console.log('element found');
-  } else {
-    console.log('Element not found within', MAX_WAIT_TIME, 'milliseconds.');
-  }
-  isOnPage = null;
-    
-  pdfParser.pdf2json(PDF_PATH, async function (error, pdf) {
-    if (error != null) {
-      console.log(error);
-    } else {
-      const objString = JSON.stringify(pdf);
-  
-      const phoneNumberMatch = objString.match(phoneRegex);
-      const phoneNumber = phoneNumberMatch ? phoneNumberMatch[0] : "N/A";
-  
-      const emailMatch = objString.match(emailRegex);
-      const email = emailMatch ? emailMatch[0] : "N/A";
-  
-      const websiteMatch = objString.match(websiteRegex);
-      const website = websiteMatch ? websiteMatch[0] : "N/A";
-  
-      const obj = {};
-      if (phoneNumber) obj.phoneNumber = phoneNumber;
-      if (email) obj.email = email;
-      if (website) obj.website = website;
-      if (pageTitle) obj.pageTitle = pageTitle;
-      const parsedUrl = new URL(url).toString().replace(/\?.*/, "");
-      obj.url = parsedUrl;
-  
-      if (Object.keys(obj).length) {
-        arr.push(obj);
-      } else {
-        console.log("no data found");
+    let startTime = Date.now();
+    let isOnPage = null;
+    while (Date.now() - startTime < MAX_WAIT_TIME && !isOnPage) {
+      isOnPage = await page.$('footer[role="contentinfo"]');
+      if (!isOnPage) {
+        console.log('Element not found. Retrying in', POLLING_INTERVAL, 'milliseconds.');
+        await page.waitForTimeout(POLLING_INTERVAL);
       }
     }
-  });
+
+    if (isOnPage) {
+      console.log('element found');
+    } else {
+      console.log('Element not found within', MAX_WAIT_TIME, 'milliseconds.');
+    }
+    isOnPage = null;
+
+    pdfParser.pdf2json(PDF_PATH, async function (error, pdf) {
+      if (error != null) {
+        console.log(error);
+      } else {
+        const objString = JSON.stringify(pdf);
+
+        const phoneNumberMatch = objString.match(phoneRegex);
+        const phoneNumber = phoneNumberMatch ? phoneNumberMatch[0] : "N/A";
+
+        const emailMatch = objString.match(emailRegex);
+        const email = emailMatch ? emailMatch[0] : "N/A";
+
+        const websiteMatch = objString.match(websiteRegex);
+        const website = websiteMatch ? websiteMatch[0] : "N/A";
+
+        const obj = {};
+        if (phoneNumber) obj.phoneNumber = phoneNumber;
+        if (email) obj.email = email;
+        if (website) obj.website = website;
+        if (pageTitle) obj.pageTitle = pageTitle;
+        const parsedUrl = new URL(url).toString().replace(/\?.*/, "");
+        obj.url = parsedUrl;
+
+        if (Object.keys(obj).length) {
+          arr.push(obj);
+        } else {
+          console.log("no data found");
+        }
+      }
+    });
   }
 
   const tabBack = async () => {
@@ -191,12 +191,12 @@ const scrapePage = async (url) => {
     await page.keyboard.up("Shift");
     await page.waitForTimeout(300);
   };
-  
+
   const tab = async () => {
     await page.keyboard.press("Tab");
     let wrongElFocused = false;
     let href = "";
-  
+
     href = await page.evaluate(() => {
       const focusedElement = document.activeElement;
       const pfpEl =
@@ -208,13 +208,13 @@ const scrapePage = async (url) => {
         return focusedElement.getAttribute("href");
       }
     });
-  
+
     if (href) urlsArr.push(href);
-  
+
     try {
       wrongElFocused = await page.evaluate(() => {
         const focusedElement = document.activeElement;
-  
+
         const isPfp =
           focusedElement.getAttribute("role") === "link" &&
           focusedElement.getAttribute("aria-label") !== "Following" &&
@@ -226,7 +226,7 @@ const scrapePage = async (url) => {
           focusedElement.getAttribute("aria-label")?.includes("ike");
         const newMsg = document.querySelector('div[role="button"][aria-label="New Message"]');
         const isMsg = focusedElement === newMsg;
-  
+
         if (isMsg || (!isPfp && !verified && !isBtn)) {
           return true;
         } else {
@@ -242,11 +242,11 @@ const scrapePage = async (url) => {
     }
     await page.waitForTimeout(100);
   };
-  
+
   while (urlsArr.length < queries) {
     await tab();
   }
-    
+
   const scrapeArrURL = async (url) => {
     await page.goto(url);
     await page.waitForTimeout(100);
@@ -254,7 +254,7 @@ const scrapePage = async (url) => {
     await page.waitForTimeout(100);
   };
 
-  for (let i=0; i<urlsArr.length; i++) {
+  for (let i = 0; i < urlsArr.length; i++) {
     await scrapeArrURL(urlsArr[i]);
     await page.waitForTimeout(100);
   };
@@ -267,7 +267,7 @@ const scrapePage = async (url) => {
 
   const data = arr.map(obj => JSON.stringify(obj)).join('\n') + '\n' + timeTaken;
 
-  fs.writeFile('results2.txt', data, function(err) {
+  fs.writeFile('results2.txt', data, function (err) {
     if (err) {
       console.log('Error saving file:', err);
     } else {

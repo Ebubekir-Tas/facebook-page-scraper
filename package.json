@@ -12,7 +12,8 @@
   "dependencies": {
     "dotenv": "^16.0.3",
     "pdf-parser": "^1.0.5",
-    "puppeteer": "^19.7.4"
+    "puppeteer": "^19.7.4",
+    "puppeteer-cluster": "^0.23.0"
   },
   "devDependencies": {
     "prettier": "^2.8.4"
