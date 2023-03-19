@@ -1,6 +1,5 @@
-// todo: run 2 concurrently to double efficiency. Then try with 3 if 2 works
-
 const puppeteer = require('puppeteer');
+const { Cluster } = require('puppeteer-cluster');
 var pdfParser = require('pdf-parser');
 const fs = require('fs');
 const { URL } = require('url');
@@ -12,12 +11,12 @@ const LOCATION_SEARCH = 'Washington DC';
 
 async function run() {
   const start = Date.now();
-  const browser = await puppeteer.launch({ headless: false, args: ["--disable-notifications"] });
-  // const browser = await puppeteer.launch();
+  // const browser = await puppeteer.launch({ headless: false, args: ["--disable-notifications"] });
+  const browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.setViewport({ width: 1500, height: 900 });
 
-  const queries = 1;
+  const queries = 100;
 
   await page.goto('https://facebook.com/login');
 
@@ -53,17 +52,21 @@ async function run() {
 
   await login();
   await page.waitForNavigation();
+  console.log('log in success')
 
   const searchForPage = async () => {
     const input = await page.$('input[type="search"]');
     await input.type('home buyers');
     await page.waitForTimeout(200);
     await page.keyboard.press('Enter');
+    await page.keyboard.press('Enter');
   }
 
   await searchForPage();
   await page.waitForNavigation();
   await page.waitForTimeout(200);
+  console.log('search for page success')
+
   await page.waitForSelector('div[role="listitem"]');
 
   const pageTabsSelector = 'div[role="list"] > div[role="listitem"]';
@@ -112,6 +115,8 @@ async function run() {
 
   await searchLocation();
 
+  console.log('search location success')
+
   const phoneRegex = /\(\d{3}\) \d{3}-\d{4}/;
   const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
   const websiteRegex = /(?<=")[\w.+(?=")[^\s./]+\.com(?=\"|\s)|(^|\s)[^\s./]+\.com(?!\S|$)/gi;
@@ -119,28 +124,36 @@ async function run() {
   const arr = [];
   const urlsArr = [];
 
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(100);
 
   if (queries > 10) await pageScroller();
 
   const PDF_PATH = 'page.pdf';
 
-  await page.pdf({ path: PDF_PATH });
+  const generatedPdfs = [];
 
-  const scrapePage = async (url) => {
-    await page.waitForTimeout(100);
-    await page.pdf({ path: PDF_PATH });
-    const pageTitle = await page.$eval('title', (el) => el.textContent);
+  const scrapePage = async (url, i) => {
+    console.log('page + ' + i + 1)
+    console.log(url)
+
+    // Create a new page instance
+    const newPage = await browser.newPage();
+    await newPage.goto(url);
+    await newPage.waitForTimeout(100);
+    const indexedPdf_Path = i + PDF_PATH;
+    generatedPdfs.push(indexedPdf_Path)
+    await newPage.pdf({ path: indexedPdf_Path});
+    const pageTitle = await newPage.$eval('title', (el) => el.textContent);
     const MAX_WAIT_TIME = 10000; // Maximum time to wait for the element in milliseconds
     const POLLING_INTERVAL = 200; // Time to wait between checks in milliseconds
 
     let startTime = Date.now();
     let isOnPage = null;
     while (Date.now() - startTime < MAX_WAIT_TIME && !isOnPage) {
-      isOnPage = await page.$('footer[role="contentinfo"]');
+      isOnPage = await newPage.$('footer[role="contentinfo"]');
       if (!isOnPage) {
         console.log('Element not found. Retrying in', POLLING_INTERVAL, 'milliseconds.');
-        await page.waitForTimeout(POLLING_INTERVAL);
+        await newPage.waitForTimeout(POLLING_INTERVAL);
       }
     }
 
@@ -151,40 +164,53 @@ async function run() {
     }
     isOnPage = null;
 
-    pdfParser.pdf2json(PDF_PATH, async function (error, pdf) {
-      if (error != null) {
-        console.log(error);
-      } else {
-        const objString = JSON.stringify(pdf);
-
-        const phoneNumberMatch = objString.match(phoneRegex);
-        const phoneNumber = phoneNumberMatch ? phoneNumberMatch[0] : "N/A";
-
-        const emailMatch = objString.match(emailRegex);
-        const email = emailMatch ? emailMatch[0] : "N/A";
-
-        const websiteMatch = objString.match(websiteRegex);
-        const website = websiteMatch ? websiteMatch[0] : "N/A";
-
-        const obj = {};
-        if (phoneNumber) obj.phoneNumber = phoneNumber;
-        if (email) obj.email = email;
-        if (website) obj.website = website;
-        if (pageTitle) obj.pageTitle = pageTitle;
-        const parsedUrl = new URL(url).toString().replace(/\?.*/, "");
-        obj.url = parsedUrl;
-
-        if (Object.keys(obj).length) {
-          arr.push(obj);
+    // Use a Promise to await the result of pdf2json
+    const pdfToJsonPromise = new Promise((resolve, reject) => {
+      pdfParser.pdf2json(indexedPdf_Path, (error, pdf) => {
+        if (error != null) {
+          console.log(error);
+          reject(error);
         } else {
-          console.log("no data found");
+          resolve(pdf);
         }
-      }
+      });
     });
-  }
+
+    // Wait for the result of pdf2json before continuing
+    const pdf = await pdfToJsonPromise;
+
+    const objString = JSON.stringify(pdf);
+
+    const phoneNumberMatch = objString.match(phoneRegex);
+    const phoneNumber = phoneNumberMatch ? phoneNumberMatch[0] : "N/A";
+
+    const emailMatch = objString.match(emailRegex);
+    const email = emailMatch ? emailMatch[0] : "N/A";
+
+    const websiteMatch = objString.match(websiteRegex);
+    const website = websiteMatch ? websiteMatch[0] : "N/A";
+
+    const obj = {};
+    if (phoneNumber) obj.phoneNumber = phoneNumber;
+    if (email) obj.email = email;
+    if (website) obj.website = website;
+    if (pageTitle) obj.pageTitle = pageTitle;
+    const parsedUrl = new URL(url).toString().replace('__tn__=%3C', "");
+    obj.url = parsedUrl;
+
+    if (Object.keys(obj).length) {
+      arr.push(obj);
+      await newPage.close();
+    } else {
+      console.log("no data found");
+    }
+
+    await newPage.close();
+  };
+
 
   const tabBack = async () => {
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(1000);
     await page.keyboard.down("Shift");
     await page.keyboard.press("Tab");
     await page.keyboard.press("Tab");
@@ -247,27 +273,43 @@ async function run() {
     await tab();
   }
 
-  const scrapeArrURL = async (url) => {
-    await page.goto(url);
+  const scrapeArrURL = async (url, page, i) => {
     await page.waitForTimeout(100);
-    await scrapePage(url);
-    await page.waitForTimeout(100);
+    await scrapePage(url, i);
   };
 
+  const cluster = await Cluster.launch({
+    concurrency: Cluster.CONCURRENCY_PAGE,
+    maxConcurrency: 5,
+  });
+
+  await cluster.task(async ({ page, data: { url, i} }) => {
+    await scrapeArrURL(url, page, i);
+  });
+
   for (let i = 0; i < urlsArr.length; i++) {
-    await scrapeArrURL(urlsArr[i]);
-    await page.waitForTimeout(100);
-  };
+    await cluster.queue({ url: urlsArr[i], i });
+  }
+
+  await cluster.idle();
+  await cluster.close();
 
   const end = Date.now();
   const elapsed = end - start;
   const timeTaken = `Function took ${elapsed} milliseconds to complete ${queries} pages.`;
   console.log(arr)
   console.log(urlsArr)
+  console.log(timeTaken)
 
   const data = arr.map(obj => JSON.stringify(obj)).join('\n') + '\n' + timeTaken;
 
-  fs.writeFile('results2.txt', data, function (err) {
+  for (const pdf of generatedPdfs) {
+    fs.unlink(pdf, (err) => {
+      if (err) throw err;
+    });
+  };
+
+  fs.writeFile('results101.txt', data, function (err) {
     if (err) {
       console.log('Error saving file:', err);
     } else {

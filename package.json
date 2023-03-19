@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "async-mutex": "^0.4.0",
     "dotenv": "^16.0.3",
     "pdf-parser": "^1.0.5",
     "puppeteer": "^19.7.4",
