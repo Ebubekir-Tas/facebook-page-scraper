@@ -1,23 +1,28 @@
+import React, { useState, useEffect } from 'react';
 import logo from './logo.svg';
 import './App.css';
 
 function App() {
+  const [data, setData] = useState();
+
+  const handleClick = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/scrape', {
+        method: 'POST'
+      });
+      const result = await response.json();
+      console.log(result)
+      setData(result);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <img src={logo} className="App-logo" alt="logo" />
+      <button onClick={() => handleClick()}>fetch</button>
+      <p>{JSON.stringify(data)}</p>
     </div>
   );
 }
