@@ -373,6 +373,4 @@ async function run() {
   return JSON.stringify(pagesData);
 }
 
-run();
-
 module.exports = { run };
