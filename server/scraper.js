@@ -369,6 +369,10 @@ async function run() {
       console.log('Results saved to file.');
     }
   });
+
+  return JSON.stringify(pagesData);
 }
 
 run();
+
+module.exports = { run };
