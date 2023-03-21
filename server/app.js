@@ -1,16 +1,30 @@
 const express = require('express');
 const scraper = require('./scraper');
 const cors = require('cors');
-
 const app = express();
 const PORT = 8000;
+const http = require('http');
+const { Server } = require('socket.io')
 
+const server = http.createServer(app)
+
+const io = new Server(server, {
+  cors: {
+    origin: ['http://localhost:3000'],
+    methods: ["GET", "POST"]
+  }
+});
+
+io.on("connection", socket => {
+  console.log(socket)
+})
+
+// enable CORS
 app.use(cors());
 
-
-app.post('/scrape', async (req, res) => {
+app.get('/scrape', async (req, res) => {
   try {
-    const result = await scraper.run();
+    const result = await scraper.run(io);
     res.json(result);
   } catch (error) {
     console.error('Error running function:', error);
@@ -18,9 +32,7 @@ app.post('/scrape', async (req, res) => {
   }
 });
 
-app.listen(PORT, (error) =>{
-  if(!error)
-    console.log("Server is Successfully Running, and App is listening on port "+ PORT)
-  else 
-    console.log("Error occurred, server can't start", error);
+server.listen(PORT, () => {
+  console.log('Server started on port ' + PORT);
 });
+

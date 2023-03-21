@@ -18,8 +18,15 @@ const PAGE_SEARCH = 'home buyers';
 const CONCURRENCY = 5;
 const queries = 10;
 
-async function run() {
+async function run(socket) {
   const start = Date.now();
+  socket.on('connection', () => {
+    console.log('Client connected');
+  });
+
+  await socket.emit('log', 'Scraper is running...');
+
+
   // const browser = await puppeteer.launch({ headless: false, args: ["--disable-notifications"] });
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
@@ -60,6 +67,7 @@ async function run() {
   await login();
   await page.waitForNavigation();
   console.log('log in success')
+  await socket.emit('log', 'log in success');
 
   const searchForPage = async () => {
     await page.waitForTimeout(1000);
@@ -78,16 +86,19 @@ async function run() {
       await searchForPage();
       await page.waitForNavigation();
       await page.waitForTimeout(200);
-      console.log('search for page success');
+      console.log('search for page successful');
+      await socket.emit('log', 'search for page successful');
       success = true;
     } catch (error) {
       console.log(`Attempt ${attempt} failed: ${error}`);
+      await socket.emit('log', `Attempt ${attempt} failed: ${error}`);
       attempt++;
     }
   }
   
   if (!success) {
     console.log(`Search for page failed after ${MAX_ATTEMPTS} attempts.`);
+    await socket.emit('log', `Search for page failed after ${MAX_ATTEMPTS} attempts.`);
   }
   
 
@@ -138,7 +149,8 @@ async function run() {
   };
 
   await searchLocation();
-  console.log('search location success')
+  console.log('search location success');
+  await socket.emit('log', 'search location success');
 
   const phoneRegex = /\(\d{3}\) \d{3}-\d{4}/;
   const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
@@ -207,9 +219,11 @@ async function run() {
       });
     } catch (err) {
       console.log(err);
+      await socket.emit('log', err);
     }
     if (wrongElFocused) {
       console.log("focused out of bounds");
+      await socket.emit('log', 'focused out of bounds');
       await tabBack();
     }
     await page.waitForTimeout(100);
@@ -226,7 +240,9 @@ async function run() {
 
   const scrapePage = async (url, i) => {
     console.log('page ' + (i + 1))
+    await socket.emit('log', 'page ' + (i + 1));
     console.log(url)
+    await socket.emit('log', url);
 
     // Create a new page instance
     const newPage = await browser.newPage();
@@ -245,14 +261,18 @@ async function run() {
       isOnPage = await newPage.$('footer[role="contentinfo"]');
       if (!isOnPage) {
         console.log('Element not found. Retrying in', POLLING_INTERVAL, 'milliseconds.');
+        await socket.emit('log', 'Element not found. Retrying in ' + POLLING_INTERVAL + ' milliseconds.');
         await newPage.waitForTimeout(POLLING_INTERVAL);
       }
     }
 
     if (isOnPage) {
       console.log('element found');
+      await socket.emit('log', 'Element found');
     } else {
       console.log('Element not found within', MAX_WAIT_TIME, 'milliseconds.');
+      await socket.emit('log', 'Element not found within ' + MAX_WAIT_TIME + ' milliseconds.');
+
     }
     isOnPage = null;
 
@@ -261,6 +281,7 @@ async function run() {
       pdfParser.pdf2json(indexedPdf_Path, (error, pdf) => {
         if (error != null) {
           console.log(error);
+          socket.emit('log', 'error...');
           reject(error);
         } else {
           resolve(pdf);
@@ -296,6 +317,7 @@ async function run() {
       await newPage.close();
     } else {
       console.log("no data found");
+      await socket.emit('log', 'no data found');
     }
 
     await newPage.close();
@@ -365,8 +387,10 @@ async function run() {
   fs.writeFile(filename, data, function (err) {
     if (err) {
       console.log('Error saving file:', err);
+      socket.emit('log', 'Error saving file');
     } else {
       console.log('Results saved to file.');
+      socket.emit('log', 'Results saved to file');
     }
   });
 
