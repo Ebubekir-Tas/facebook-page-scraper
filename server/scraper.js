@@ -233,12 +233,12 @@ async function run(socket) {
     await tab();
   }
 
-
   const PDF_PATH = 'page.pdf';
 
   const generatedPdfs = [];
 
   const scrapePage = async (url, i) => {
+    await page.waitForTimeout(100);
     console.log('page ' + (i + 1))
     await socket.emit('log', 'page ' + (i + 1));
     console.log(url)
@@ -247,13 +247,20 @@ async function run(socket) {
     // Create a new page instance
     const newPage = await browser.newPage();
     await newPage.goto(url);
+
+    // await for page selectors to make sure page is fully loaded before converting to pdf
+    await newPage.waitForSelector('ul')    
     await newPage.waitForTimeout(100);
+    await newPage.waitForSelector('img');
+    await newPage.waitForSelector('footer[role="contentinfo"]');
+
     const indexedPdf_Path = i + PDF_PATH;
     generatedPdfs.push(indexedPdf_Path)
     await newPage.pdf({ path: indexedPdf_Path});
     const pageTitle = await newPage.$eval('title', (el) => el.textContent);
     const MAX_WAIT_TIME = 10000; // Maximum time to wait for the element in milliseconds
     const POLLING_INTERVAL = 200; // Time to wait between checks in milliseconds
+    await newPage.waitForTimeout(100);
 
     let startTime = Date.now();
     let isOnPage = null;
@@ -262,6 +269,8 @@ async function run(socket) {
       if (!isOnPage) {
         console.log('Element not found. Retrying in', POLLING_INTERVAL, 'milliseconds.');
         await socket.emit('log', 'Element not found. Retrying in ' + POLLING_INTERVAL + ' milliseconds.');
+        await newPage.waitForTimeout(100);
+
         await newPage.waitForTimeout(POLLING_INTERVAL);
       }
     }
@@ -272,25 +281,35 @@ async function run(socket) {
     } else {
       console.log('Element not found within', MAX_WAIT_TIME, 'milliseconds.');
       await socket.emit('log', 'Element not found within ' + MAX_WAIT_TIME + ' milliseconds.');
-
     }
     isOnPage = null;
 
     // Use a Promise to await the result of pdf2json
-    const pdfToJsonPromise = new Promise((resolve, reject) => {
-      pdfParser.pdf2json(indexedPdf_Path, (error, pdf) => {
-        if (error != null) {
-          console.log(error);
-          socket.emit('log', 'error...');
-          reject(error);
-        } else {
-          resolve(pdf);
-        }
-      });
+    const pdfToJsonPromise = new Promise(async (resolve, reject) => {
+      try {
+        await newPage.waitForSelector('ul');
+        await newPage.waitForSelector('img');
+        await newPage.waitForSelector('footer[role="contentinfo"]');
+        
+        pdfParser.pdf2json(indexedPdf_Path, (error, pdf) => {
+          if (error != null) {
+            console.log(error);
+            socket.emit('log', 'error...');
+            reject(error);
+          } else {
+            resolve(pdf);
+          }
+        });
+      } catch (error) {
+        console.log(error);
+        reject(error);
+      }
     });
-
+    
     // Wait for the result of pdf2json before continuing
+    await page.waitForTimeout(100);
     const pdf = await pdfToJsonPromise;
+    await page.waitForTimeout(100);
 
     const objString = JSON.stringify(pdf);
 
@@ -313,18 +332,19 @@ async function run(socket) {
     obj.url = parsedUrl;
 
     if (Object.keys(obj).length) {
+      await newPage.waitForTimeout(100);
       pagesData.push(obj);
       await newPage.close();
     } else {
       console.log("no data found");
       await socket.emit('log', 'no data found');
     }
-
+    await newPage.waitForTimeout(200);
     await newPage.close();
   };
 
   const scrapeArrURL = async (url, page, i) => {
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(200);
     await scrapePage(url, i);
   };
 
@@ -397,4 +417,5 @@ async function run(socket) {
   return JSON.stringify(pagesData);
 }
 
+// run();
 module.exports = { run };
