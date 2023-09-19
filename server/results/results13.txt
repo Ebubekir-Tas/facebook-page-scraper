@@ -1,0 +1,12 @@
+{"phoneNumber":"(210) 227-1010","email":"info@nalcab.org","website":"N/A","pageTitle":"(2) National Association for Latino Community Asset Builders (NALCAB) | Facebook","url":"https://www.facebook.com/NALCAB/"}
+{"phoneNumber":"(210) 227-1010","email":"info@nalcab.org","website":"N/A","pageTitle":"(2) Florida Home Buyer Programs | Facebook","url":"https://www.facebook.com/Florida-Home-Buyer-Programs-106220245008449/"}
+{"phoneNumber":"N/A","email":"buyersaddictionent@gmail.com","website":"AY.COM","pageTitle":"(2) Buyer's Addiction | Facebook","url":"https://www.facebook.com/buyersaddiction100/"}
+{"phoneNumber":"(888) 494-3256","email":"directory@usa.net","website":"N/A","pageTitle":"(2) Custom Home Builders | Facebook","url":"https://www.facebook.com/custom.home.building/"}
+{"phoneNumber":"(202) 498-6794","email":"jsmithteam@gmail.com","website":"ARYEO.COM","pageTitle":"(2) The Smith Brothers Realtors | Facebook","url":"https://www.facebook.com/TheSmithTeam.DC/"}
+{"phoneNumber":"(202) 503-2783","email":"jeff@dependablehomebuyers.com","website":"N/A","pageTitle":"(2) Dependable Homebuyers | Facebook","url":"https://www.facebook.com/dependablehomebuyerswashingtondc/"}
+{"phoneNumber":"(877) 500-2275","email":"washingtondc@barkbusters.com","website":"N/A","pageTitle":"(2) Bark Busters Home Dog Training Washington, D.C. | Facebook","url":"https://www.facebook.com/BarkBustersWashingtonDCMaryland/"}
+{"phoneNumber":"(301) 922-1677","email":"victoria@homebuyerbrokerage.com","website":"homebuyerbrokerage.com","pageTitle":"(2) HomeBuyer Brokerage | Silver Spring MD | Facebook","url":"https://www.facebook.com/homebuyerbrokerage"}
+{"phoneNumber":"(540) 898-9321","email":"jason@ayershousemovers.com","website":"N/A","pageTitle":"(2) Ayers House Movers, Inc | Facebook","url":"https://www.facebook.com/Ayers-House-Movers-Inc-162236303804941/"}
+Function took 53883 milliseconds to complete 10 pages.
+9 pages failed to scrape
+[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]

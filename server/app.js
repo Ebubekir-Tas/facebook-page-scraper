@@ -12,14 +12,18 @@ const io = new Server(server, {
   cors: {
     origin: ['http://localhost:3000'],
     methods: ["GET", "POST"]
-  }
+}
 });
 
 io.on("connection", socket => {
-  console.log(socket)
+  io.on('sendUserInput', (args) => console.log(args))
+  console.log('qwqwq')
 })
 
-// enable CORS
+// todo
+io.on('sendUserInput', (b) =>{
+})
+
 app.use(cors());
 
 app.get('/scrape', async (req, res) => {

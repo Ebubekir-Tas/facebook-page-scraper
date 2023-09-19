@@ -1,0 +1,13 @@
+{"phoneNumber":"(202) 440-1817","email":"astuterei@gmail.com","website":"fasthomebuyers247.com","pageTitle":"(2) Fast Home Buyers 247 | Facebook","url":"https://www.facebook.com/profile.php"}
+{"phoneNumber":"(202) 440-1817","email":"astuterei@gmail.com","website":"fasthomebuyers247.com","pageTitle":"(2) Lisa at HomeBuyer Brokerage | Facebook","url":"https://www.facebook.com/profile.php"}
+{"phoneNumber":"(703) 665-4414","email":"alex@safahomebuyers.com","website":"safahomebuyers.com","pageTitle":"(2) SAFA HomeBuyers | Washington D.C. DC | Facebook","url":"https://www.facebook.com/SafaHomeBuyersDC"}
+{"phoneNumber":"(202) 437-3990","email":"theo.harding@wydlerbrothers.com","website":"TheoHarding.com","pageTitle":"(2) Theo Harding - Realtor at Wydler Brothers of Compass | Facebook","url":"https://www.facebook.com/theohardingrealtor/"}
+{"phoneNumber":"(240) 249-5622","email":"wakill84@gmail.com","website":"N/A","pageTitle":"(2) Cba Home Buyers | Washington D.C. DC | Facebook","url":"https://www.facebook.com/profile.php"}
+{"phoneNumber":"(703) 829-0720","email":"N/A","website":"easycashhomebuyers.com","pageTitle":"Easy Cash Home Buyers | Mount Vernon VA | Facebook","url":"https://www.facebook.com/easycashhomebuyers"}
+{"phoneNumber":"(202) 587-5688","email":"N/A","website":"masterhomebuyers.com","pageTitle":"Master Home Buyers | Washington D.C. DC | Facebook","url":"https://www.facebook.com/masterhomebuy"}
+{"phoneNumber":"(240) 765-9030","email":"N/A","website":"thereliablehomebuyer.com","pageTitle":"The Reliable Home Buyer | Washington D.C. DC | Facebook","url":"https://www.facebook.com/profile.php"}
+{"phoneNumber":"(240) 428-4440","email":"N/A","website":"dchomebuyer.blogspot.com","pageTitle":"(2) DC Home Buyer | Washington D.C. DC | Facebook","url":"https://www.facebook.com/dchomebuyer"}
+{"phoneNumber":"N/A","email":"N/A","website":"N/A","pageTitle":"(2) MidCity Home Buyers | Facebook","url":"https://www.facebook.com/profile.php"}
+{"phoneNumber":"(301) 232-3340","email":"office@localhomebuyer.com","website":"localhomebuyer.com","pageTitle":"(2) Local Home Buyer | Facebook","url":"https://www.facebook.com/Localhomebuyerdotcom"}
+{"phoneNumber":"N/A","email":"N/A","website":"N/A","pageTitle":"(2) District of Columbia Home Buyers Exchange | Facebook","url":"https://www.facebook.com/profile.php"}
+Function took 42670 milliseconds to complete 12 pages.

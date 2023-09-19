@@ -1,0 +1,15 @@
+{"phoneNumber":"N/A","email":"N/A","website":"N/A","pageTitle":"National Association of Home Builders | Washington D.C. DC","url":"https://www.facebook.com/NAHBhome"}
+{"phoneNumber":"N/A","email":"N/A","website":"N/A","pageTitle":"(2) Cash Home Buyers N DC | Facebook","url":"https://www.facebook.com/profile.php"}
+{"phoneNumber":"N/A","email":"N/A","website":"3DHomeBuildersAssociation.com","pageTitle":"(2) 3D Home Builders Association | Washington D.C. DC | Facebook","url":"https://www.facebook.com/3DHomeBuildersAssociation"}
+{"phoneNumber":"(703) 596-5311","email":"jon@capitolhomebuyers.com","website":"sellhouseforcashtoday.com","pageTitle":"(2) Capitol Home Buyers | Arlington VA | Facebook","url":"https://www.facebook.com/CapitolHomeBuyers"}
+{"phoneNumber":"(301) 525-8624","email":"N/A","website":"123metrohomebuyers.com","pageTitle":"(2) 123 Metro Home Buyers | Rockville MD | Facebook","url":"https://www.facebook.com/profile.php"}
+{"phoneNumber":"(240) 701-7140","email":"info@homebuyerslive.com","website":"homebuyerslive.com","pageTitle":"(2) Homebuyers Live | Facebook","url":"https://www.facebook.com/homebuyerslive"}
+{"phoneNumber":"(202) 466-6100","email":"ibuyselldmv@gmail.com","website":"dmvrealhomebuyers.com","pageTitle":"DMV Real Home Buyers, LLC | Washington D.C. DC | Facebook","url":"https://www.facebook.com/Zakee123"}
+{"phoneNumber":"(866) 228-8203","email":"luxhomebuyers@gmail.com","website":"luxhomebuyers.com","pageTitle":"Lux Home Buyers | Facebook","url":"https://www.facebook.com/luxhomebuyers"}
+{"phoneNumber":"(202) 276-2295","email":"N/A","website":"firsttimehomebuyingprograms.com","pageTitle":"First Time Home Buyers | Washington D.C. DC | Facebook","url":"https://www.facebook.com/1sttimehomebuying"}
+{"phoneNumber":"(202) 897-0739","email":"billiondollardream35@gmail.com","website":"N/A","pageTitle":"BillionDollar Home Buyers | Facebook","url":"https://www.facebook.com/BillionDollarHomeBuyers"}
+{"phoneNumber":"(202) 558-3829","email":"lisa@homebuyerbrokerage.com","website":"GE.COM","pageTitle":"Lisa at HomeBuyer Brokerage | Facebook","url":"https://www.facebook.com/profile.php"}
+{"phoneNumber":"(202) 440-1817","email":"astuterei@gmail.com","website":"fasthomebuyers247.com","pageTitle":"Fast Home Buyers 247 | Facebook","url":"https://www.facebook.com/profile.php"}
+Function took 30741 milliseconds to complete 12 pages.
+
+5 concurrent with unique pdf names

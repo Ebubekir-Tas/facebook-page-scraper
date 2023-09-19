@@ -13,6 +13,14 @@
   }
 }
 
+label {
+  color: #f0f0f0
+}
+
+input {
+  margin: 8px;
+}
+
 .App-header {
   background-color: #282c34;
   min-height: 100vh;
@@ -26,6 +34,10 @@
 
 .App-link {
   color: #61dafb;
+}
+
+#socket-status {
+  color: #f0f0f0
 }
 
 @keyframes App-logo-spin {

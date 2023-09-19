@@ -11,24 +11,31 @@ const { URL } = require('url');
 require('dotenv').config();
 const XLSX = require('xlsx');
 
+// alternate dummy account
 const EMAIL = process.env.EMAIL;
 const PASSWORD = process.env.PASSWORD;
+
 const LOCATION_SEARCH = 'Washington DC';
 const PAGE_SEARCH = 'home buyers';
-const CONCURRENCY = 5;
+const CONCURRENCY = 1;
 const queries = 10;
 
 async function run(socket) {
   const start = Date.now();
+
   socket.on('connection', () => {
     console.log('Client connected');
   });
 
+  socket.on('sendUserInput', async ({ pageName, queries, location, concurrency }) => {
+    // do something with the data received from the client
+  });
   await socket.emit('log', 'Scraper is running...');
 
+  // process.exit();
 
-  // const browser = await puppeteer.launch({ headless: false, args: ["--disable-notifications"] });
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({ headless: false, args: ["--disable-notifications"] });
+  // const browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.setViewport({ width: 1500, height: 900 });
 
@@ -69,68 +76,76 @@ async function run(socket) {
   console.log('log in success')
   await socket.emit('log', 'log in success');
 
-  const searchForPage = async () => {
-    await page.waitForTimeout(1000);
-    const input = await page.$('input[type="search"]');
-    await input.type(PAGE_SEARCH);
-    await page.waitForTimeout(100);
-    await page.keyboard.press('Enter');
-  }
+  // search for page disabled as alternative is to parse the search term as a url query
+  // const searchForPage = async () => {
+  //   await page.waitForTimeout(1000);
+  //   const input = await page.$('input[type="search"]');
+  //   await input.type(PAGE_SEARCH);
+  //   await page.waitForTimeout(100);
+  //   await page.keyboard.press('Enter');
+  // }
 
-  const MAX_ATTEMPTS = 3;
-  let attempt = 1;
-  let success = false;
+  // const MAX_ATTEMPTS = 3;
+  // let attempt = 1;
+  // let success = false;
   
-  while (attempt <= MAX_ATTEMPTS && !success) {
-    try {
-      await searchForPage();
-      await page.waitForNavigation();
-      await page.waitForTimeout(200);
-      console.log('search for page successful');
-      await socket.emit('log', 'search for page successful');
-      success = true;
-    } catch (error) {
-      console.log(`Attempt ${attempt} failed: ${error}`);
-      await socket.emit('log', `Attempt ${attempt} failed: ${error}`);
-      attempt++;
-    }
-  }
+  // while (attempt <= MAX_ATTEMPTS && !success) {
+  //   try {
+  //     await searchForPage();
+  //     await page.waitForNavigation();
+  //     await page.waitForTimeout(200);
+  //     console.log('search for page successful');
+  //     // await socket.emit('log', 'search for page successful');
+  //     success = true;
+  //   } catch (error) {
+  //     console.log(`Attempt ${attempt} failed: ${error}`);
+  //     // await socket.emit('log', `Attempt ${attempt} failed: ${error}`);
+  //     attempt++;
+  //   }
+  // }
   
-  if (!success) {
-    console.log(`Search for page failed after ${MAX_ATTEMPTS} attempts.`);
-    await socket.emit('log', `Search for page failed after ${MAX_ATTEMPTS} attempts.`);
-  }
+  // if (!success) {
+  //   console.log(`Search for page failed after ${MAX_ATTEMPTS} attempts.`);
+  //   // await socket.emit('log', `Search for page failed after ${MAX_ATTEMPTS} attempts.`);
+  // }
   
 
-  await page.waitForSelector('div[role="listitem"]');
+  // click pages tab, i'm navigating to url instead for now.
 
-  const pageTabsSelector = 'div[role="list"] > div[role="listitem"]';
-  await page.waitForSelector(pageTabsSelector);
 
-  const clickPagesTab = async () => {
-    await page.waitForTimeout(100);
-    // // Page is currently 7th child. This is hardcoded for now.
-    const pagesSelector = 'div[role="list"] > div[role="listitem"]:nth-child(7) div a'
-    await page.waitForSelector(pagesSelector);
-    await page.click(pagesSelector);
-    await page.waitForTimeout(200);
-    await page.click(pagesSelector);
-  };
+  // await page.waitForSelector('div[role="listitem"]');
 
-  await clickPagesTab();
+  // const pageTabsSelector = 'div[role="list"] > div[role="listitem"]';
+  // await page.waitForSelector(pageTabsSelector);
+
+  // const clickPagesTab = async () => {
+  //   await page.waitForTimeout(10000);
+  //   // // Page is currently 7th child. This is hardcoded for now.
+  //   const pagesSelector = 'div[role="list"] > div[role="listitem"]:nth-child(7) div a'
+
+  //   await page.waitForSelector(pagesSelector);
+  //   await page.click(pagesSelector);
+  //   await page.waitForTimeout(200);
+  //   await page.click(pagesSelector);
+  // };
+
+  // await clickPagesTab();
+
+  const parseSearch = LOCATION_SEARCH.replace(' ', '%20')
+
+  await page.goto(`https://www.facebook.com/search/pages?q=${parseSearch}`)
 
   const searchLocation = async () => {
     // I have no idea why facebook nests their elements so deeply into divs, not sure if there's another way of doing this
-    const locationSelector =
-      'div[role="list"] > div[role="listitem"]:nth-child(7) > div[role="list"] > div[role="listitem"]:nth-child(2) > div > div > div > div > div > div > div > div > div';
-
+    const locationSelector = 
+    'div[role="list"] > div[role="listitem"]:nth-child(7) > div[role="list"] > div[role="listitem"]:nth-child(2) > div > div > div > div > div > div > div'
     await page.waitForSelector(locationSelector);
     await page.click(locationSelector);
 
     await page.waitForSelector(locationSelector);
 
     const locationInput =
-      'div[role="list"] > div[role="listitem"]:nth-child(7) > div > div:nth-child(2) > div > div > div > div > div > div > div:nth-child(2) > input';
+    'div[role="list"] > div[role="listitem"]:nth-child(7) > div[role="list"] > div[role="listitem"]:nth-child(2) > div > div > div > div > div > div > input'
     await page.waitForSelector(locationInput);
     await page.type(locationInput, LOCATION_SEARCH);
     await page.waitForTimeout(500);
@@ -257,7 +272,8 @@ async function run(socket) {
     const indexedPdf_Path = i + PDF_PATH;
     generatedPdfs.push(indexedPdf_Path)
     await newPage.pdf({ path: indexedPdf_Path});
-    const pageTitle = await newPage.$eval('title', (el) => el.textContent);
+    // const pageTitle = await newPage.$eval('title', (el) => el.textContent);
+    const pageTitle = await page.$$eval('h1', (elements) => (elements[1].textContent || 'not found'));
     const MAX_WAIT_TIME = 10000; // Maximum time to wait for the element in milliseconds
     const POLLING_INTERVAL = 200; // Time to wait between checks in milliseconds
     await newPage.waitForTimeout(100);
@@ -334,6 +350,7 @@ async function run(socket) {
     if (Object.keys(obj).length) {
       await newPage.waitForTimeout(100);
       pagesData.push(obj);
+      socket.emit('pages', pagesData);
       await newPage.close();
     } else {
       console.log("no data found");
@@ -417,5 +434,5 @@ async function run(socket) {
   return JSON.stringify(pagesData);
 }
 
-// run();
+run();
 module.exports = { run };
