@@ -8,6 +8,7 @@ export const UserInputs = ({
 }) => (
   <div>
     <div>
+      <p style={{color: 'white', textAlign: 'center'}}>currently queries hardcoded to 'Washington DC' and 'home buyers' as development of this app is paused</p>
       <label>
         Search For Page:
         <input type="text" value={pageName} onChange={(e) => setPageName(e.target.value)} />
